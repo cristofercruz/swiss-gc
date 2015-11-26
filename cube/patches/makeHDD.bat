@@ -3,7 +3,7 @@ mkdir built
 powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -c base\base.S
 powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -c ide-exi\hddread.c
 powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -c base\frag.c
-powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -c base\usbgecko.c
+powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -DDEBUG -c base\usbgecko.c
 powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -c base\dvdqueue.c
 powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -c base\dvdinterface.c
 powerpc-eabi-gcc -O2 -ffunction-sections -mmultiple -mstring -c base\adp.c

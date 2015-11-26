@@ -436,7 +436,7 @@ int main ()
 
 	// Sane defaults
 	refreshSRAM();
-	swissSettings.debugUSB = 0;
+	swissSettings.debugUSB = 1;
 	swissSettings.gameVMode = 0;	// Auto video mode
 	swissSettings.exiSpeed = 1;		// 32MHz
 	swissSettings.uiVMode = 0; 		// Auto UI mode

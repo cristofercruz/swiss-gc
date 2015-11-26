@@ -68,13 +68,13 @@ u32 RunAppldr()
 
 	/* Read apploader header */
 	u32 appldr_loc = *((vu32*)0x812FCFF4);
-	device_frag_read(&appldr_hdr, 0x20, appldr_loc);
+	device_frag_read(&appldr_hdr, 0x20, appldr_loc, 1);
 
 	/* Calculate apploader length */
 	u32 appldr_len = ALIGN_FORWARD(appldr_hdr.size + appldr_hdr.trailersize, 0x20);
 
 	/* Read apploader code */
-	device_frag_read((void*)0x81200000, appldr_len, appldr_loc + 0x20);
+	device_frag_read((void*)0x81200000, appldr_len, appldr_loc + 0x20, 1);
 
 	/* Flush into memory */
 	dcache_flush_icache_inv((void*)0x81200000, appldr_len);
@@ -99,7 +99,7 @@ u32 RunAppldr()
 	/* Read DOL */
 	while(appldr_main(&dst, &len, &offset))
 	{
-		device_frag_read(dst, len, offset);
+		device_frag_read(dst, len, offset, 1);
 		dcache_store(dst, len);
 	}
 

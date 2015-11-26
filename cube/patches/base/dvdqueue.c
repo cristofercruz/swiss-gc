@@ -22,10 +22,10 @@ u32 process_queue(u32 dst, u32 len, u32 offset, int readComplete) {
 	if(len) {
 		// read a bit
 		int amountToRead = 0;
-		if(readComplete) {
+		//if(readComplete) {
 			amountToRead = len;
-		}
-		else {
+		//}
+		/*else {
 			// Assume 32KHz, ~128 bytes @ 32KHz is going to play for 1000us
 			int dmaBytesLeft = (((*(volatile u16*)0xCC00503A) & 0x7FFF)<<5);
 
@@ -50,8 +50,7 @@ u32 process_queue(u32 dst, u32 len, u32 offset, int readComplete) {
 			amountToRead = len > amountAllowedToRead ? amountAllowedToRead:len;
 		}
 		if(amountToRead == 0)
-			return 0;
-		device_frag_read(dst, amountToRead, offset);
-		return amountToRead;
+			return 0;*/
+		return device_frag_read(dst, amountToRead, offset, 0);
 	}
 }

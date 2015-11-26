@@ -12,7 +12,7 @@ typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
 
-extern void do_read(void*, u32, u32, u32);
+extern int do_read(void*, u32, u32, u32);
 
 // Returns the amount read from the given offset until a frag is hit
 u32 read_frag(void *dst, u32 len, u32 offset) {
@@ -40,24 +40,26 @@ u32 read_frag(void *dst, u32 len, u32 offset) {
 			if(fragOffset != 0) {
 				adjustedOffset = offset - fragOffset;
 			}
-			do_read(dst, amountToRead, adjustedOffset, fragSector);
-			return amountToRead;
+			return do_read(dst, amountToRead, adjustedOffset, fragSector);
 		}
 	}
 	return 0;
 }
 
-void device_frag_read(void *dst, u32 len, u32 offset)
+int device_frag_read(void *dst, u32 len, u32 offset, int sync)
 {
 	void *oDst = dst;
 	u32 oLen = len;
-		
+	int totalAmountRead = 0;
 	while(len != 0) {
 		int amountRead = read_frag(dst, len, offset);
 		len-=amountRead;
 		dst+=amountRead;
 		offset+=amountRead;
+		totalAmountRead += amountRead;
+		if(!sync) break;
 	}
+	return totalAmountRead;
 }
 
 #define mftb(rval) ({unsigned long u; do { \
@@ -85,7 +87,7 @@ void calculate_speed(void* dst, u32 len, u32 *speed)
 {
 	tb_t start, end;
 	mftb(&start);
-	device_frag_read(dst, len, 0);
+	device_frag_read(dst, len, 0, 1);
 	mftb(&end);
 	*speed = tb_diff_usec(&end, &start);
 }

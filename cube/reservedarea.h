@@ -54,6 +54,7 @@
 .set VAR_AS_TMP_RSAMPLE,0x2F8E
 .set VAR_AS_OUTL,		0x2F90
 .set VAR_AS_OUTR,		0x2FC8
+.set VAR_LAST_DMA,		0x2FCC	# Last DMA addr for IDE-EXI
 
 # Cheat Engine + Cheats buffer	(0x817FB000)
 .set	WIIRD_ENGINE_SPACE,  (0x2E00)
@@ -113,6 +114,7 @@
 #define VAR_AS_TMP_RSAMPLE	(VAR_AREA+0x2F8E)
 #define VAR_AS_OUTL			(VAR_AREA+0x2F90)
 #define VAR_AS_OUTR			(VAR_AREA+0x2FC8)
+#define VAR_LAST_DMA		(VAR_AREA+0x2FCC)
 
 // Cheat Engine + Cheats buffer (0x817FB000)
 #define WIIRD_ENGINE_SPACE  (0x2E00)

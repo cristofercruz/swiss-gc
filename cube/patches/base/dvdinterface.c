@@ -19,7 +19,8 @@
 
 #define AGGRESSIVE_INT 1
 
-//int usb_sendbuffer_safe(const void *buffer,int size);
+int usb_sendbuffer_safe(const void *buffer,int size);
+void print_int_hex(unsigned int num);
 
 typedef unsigned int u32;
 typedef int s32;
@@ -70,7 +71,7 @@ void DIUpdateRegisters() {
 			case 0xAB:	// Seek
 				diOpCompleted = 1;
 				break;
-			case 0xE1:	// play Audio Stream
+			/*case 0xE1:	// play Audio Stream
 				if(*(u32*)VAR_AS_ENABLED) {
 					switch( (dvd[DI_CMD] >> 16) & 0xFF )
 					{
@@ -118,7 +119,7 @@ void DIUpdateRegisters() {
 					}
 				}
 				diOpCompleted = 1;
-				break;
+				break;*/
 			case 0xE4:	// Disable Audio
 				diOpCompleted = 1;
 				break;
@@ -168,6 +169,9 @@ void DIUpdateRegisters() {
 					else
 					{
 						// Read. We might not do the full read, depends how busy the game is
+						/*usb_sendbuffer_safe("\r\nreq: ", 7);
+						print_int_hex(len);
+						usb_sendbuffer_safe("\n", 2);*/
 						u32 amountRead = process_queue(dst, len, offset, readComplete);
 						if(amountRead) {
 							dcache_flush_icache_inv(dst, amountRead);
@@ -177,6 +181,7 @@ void DIUpdateRegisters() {
 						}
 
 						if(dvd[DI_DMALEN] == 0) {
+							//usb_sendbuffer_safe("\r\ndone\r\n", 8);
 							diOpCompleted = 1;
 						}
 					}

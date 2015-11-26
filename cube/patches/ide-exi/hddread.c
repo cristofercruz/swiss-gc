@@ -41,6 +41,7 @@ typedef unsigned char u8;
 
 #define _ideexi_version *(u32*)VAR_TMP2
 #define _ata48bit *(u32*)VAR_TMP1
+#define last_read_dst *(u32*)VAR_LAST_DMA
 
 #define IDE_EXI_V1 0
 #define IDE_EXI_V2 1
@@ -92,14 +93,16 @@ u32 exi_imm_read()
 	return exi[exi_channel + 4];
 }
 
-void exi_dma_sync(void* data, int len, int mode)
+void exi_dma(void* data, int len, int mode, int sync)
 {
+	if(!sync)
+		last_read_dst = (u32)data;
 	volatile unsigned long* exi = (volatile unsigned long*)0xCC006800;
 
 	exi[exi_channel + 1] = (unsigned long)data;
 	exi[exi_channel + 2] = len;
 	exi[exi_channel + 3] = (mode << 2) | 3;
-	while (exi[exi_channel + 3] & 1);	// Yeah.
+	while(sync && (exi[exi_channel + 3] & 1)); // block if sync
 }
 
 // Returns 8 bits from the ATA Status register
@@ -122,10 +125,10 @@ void ataWriteByte(u8 addr, u8 data)
 	exi_deselect();
 }
 
-// Reads up to 0xFFFF * 4 bytes of data (~255kb) from the hdd at the given offset
-void ata_read_buffer(u8 *dst) 
+// Reads 512 bytes from the ide-exi
+void ata_read_buffer(u8 *dst, int sync) 
 {
-	u8 alignedBuf[512] __attribute__((aligned(32)));
+	u32* alignedBuf = (u32*)0x80002B00;	// TODO this buffer is gone!
 	u32 i = 0;
 	u32 *ptr = (u32*)dst;
 	u16 dwords = 128;
@@ -144,25 +147,27 @@ void ata_read_buffer(u8 *dst)
 		exi_imm_read();
 	}
 	else {	// v2, no deselect or extra read required.
-		//for(i = 0; i < dwords; i++) {
-		//	*ptr++ = exi_imm_read();
-		//}
 		u32 *ptr = (u32*)dst;
 		if(((u32)dst)%32) {
-			ptr = (u32*)&alignedBuf;
+			ptr = alignedBuf;
 		}
 		dcache_flush_icache_inv(ptr, 512);
-		exi_dma_sync(ptr, 512, EXI_READ);
-		if(((u32)dst)%32) {
-			mymemcpy(dst, ptr, 512);
+		exi_dma(ptr, 512, EXI_READ, sync);
+		if(sync) {
+			// It wasn't aligned, copy it.
+			if(((u32)dst)%32) {
+				mymemcpy(dst, ptr, 512);
+			}
 		}
 	}
-	exi_deselect();
+	if(sync) {
+		exi_deselect();
+	}
 }
 
 // Reads sectors from the specified lba, for the specified slot, 511 sectors at a time max for LBA48 drives
 // Returns 0 on success, -1 on failure.
-int _ataReadSector(u32 lba, void *buffer)
+void _ataReadSector(u32 lba, void *buffer, int sync)
 {
 	u32 temp = 0;
   	
@@ -195,70 +200,59 @@ int _ataReadSector(u32 lba, void *buffer)
 	}
 	// Wait for BSY to clear
 	while((temp = ataReadStatusReg()) & ATA_SR_BSY);
-	
-	// If the error bit was set, fail.
-	if(temp & ATA_SR_ERR) {
-		//*(u32*)0xCC003024 = 0;
-		*(u32*)buffer = 0x13370001;
-		return 1;
-	}
 
 	// Wait for drive to request data transfer
 	while(!(ataReadStatusReg() & ATA_SR_DRQ));
 	
-	// read data from drive
-	ata_read_buffer(buffer);
-
-	// Wait for BSY to clear
-	temp = ataReadStatusReg();
+	// request to read data from drive but return to the game
+	ata_read_buffer(buffer, sync);
 	
-	// If the error bit was set, fail.
-	if(temp & ATA_SR_ERR) {
-		//*(u32*)0xCC003024 = 0;
-		*(u32*)buffer = 0x13370002;
-		return 1;
+	if(sync) {
+		ataReadStatusReg();	// Burn one byte
 	}
-	
-	return temp & ATA_SR_ERR;
 }
 
-void do_read(void *dst,u32 size, u32 offset, u32 sectorLba) {
-	u8 sector[SECTOR_SIZE];
-	u32 lba = (offset>>9) + sectorLba;
+int do_read(void *dst,u32 size, u32 offset, u32 sectorLba) {
+
+	// See if we've been called after a DMA has been fired off
+	if(last_read_dst) {
+		/*usb_sendbuffer_safe("\r\nlast: ", 8);
+		print_int_hex(last_read_dst);
+		usb_sendbuffer_safe("\n", 2);*/
+		volatile unsigned long* exi = (volatile unsigned long*)0xCC006800;
+		if (exi[exi_channel + 3] & 1) return 0;
+		exi_deselect();
+		ataReadStatusReg();	// Burn one byte
+		// It wasn't aligned, copy it.
+		if(((u32)dst)%32) {
+			mymemcpy(dst, (u32*)(last_read_dst), 512);
+		}
+		last_read_dst = 0;
+		return 512;
+	}
 	
+	u8 sector[SECTOR_SIZE] __attribute__((aligned(32)));
+	u32 lba = (offset>>9) + sectorLba;
 	// Read any half sector if we need to until we're aligned
 	if(offset % SECTOR_SIZE) {
 		u32 size_to_copy = MIN(size, SECTOR_SIZE-(offset%SECTOR_SIZE));
-		if(_ataReadSector(lba, sector)) {
-			//*(u32*)0xCC003024 = 0;
-			*(u32*)dst = 0x13370003;
-			return;
-		}
+		_ataReadSector(lba, sector, 1);
 		mymemcpy(dst, &(sector[offset%SECTOR_SIZE]), size_to_copy);
-		size -= size_to_copy;
-		dst += size_to_copy;
-		lba += 1;
+		return size_to_copy;
 	}
-	// Read any whole sectors
-	while(size >= 512) {
-		if(_ataReadSector(lba, dst)) {
-			//*(u32*)0xCC003024 = 0;
-			*(u32*)dst = 0x13370004;
-			return;
-		}
-		size -= SECTOR_SIZE;
-		dst += SECTOR_SIZE;
-		lba ++;
+	// Read any whole sectors (async)
+	if(size >= 512) {
+		_ataReadSector(lba, dst, 0);
+		//usb_sendbuffer_safe("\r\nread\r\n", 8);
+		return 0;
 	}
 	// Read the last sector if there's any half sector
 	if(size) {
-		if(_ataReadSector(lba, sector)) {
-			//*(u32*)0xCC003024 = 0;
-			*(u32*)dst = 0x13370006;
-			return;
-		}
+		_ataReadSector(lba, sector, 1);
 		mymemcpy(dst, &(sector[0]), size);
-	}	
+		return size;
+	}
+	return 0;
 }
 
 

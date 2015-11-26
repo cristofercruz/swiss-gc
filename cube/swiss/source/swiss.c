@@ -619,13 +619,14 @@ unsigned int load_app(int multiDol)
 	ICInvalidateRange((void*)0x80000000, 0x3100);
 	
 	// Try a device speed test using the actual in-game read code
-	if((curDevice == SD_CARD)||(curDevice == IDEEXI)||(curDevice == USBGECKO)) {
+	/*if((curDevice == SD_CARD)||(curDevice == IDEEXI)||(curDevice == USBGECKO)) {
 		print_gecko("Attempting speed test\r\n");
 		char *buffer = memalign(32,1024*1024);
 		typedef u32 (*_calc_speed) (void* dst, u32 len, u32 *speed);
 		_calc_speed calculate_speed = (_calc_speed) (void*)(CALC_SPEED);
 		u32 speed = 0;
 		if(curDevice == IDEEXI) {
+			*(volatile unsigned int*)VAR_LAST_DMA = 0;
 			calculate_speed(buffer, 1024*1024, &speed);	//Once more for HDD seek
 			speed = 0;
 		}
@@ -637,7 +638,7 @@ unsigned int load_app(int multiDol)
 		print_gecko("Speed for 1024 bytes is: %i usec\r\n",speed/1024);
 		*(unsigned int*)VAR_DEVICE_SPEED = speed/1024;
 		free(buffer);
-	}
+	}*/
 	
 	if(swissSettings.hasDVDDrive) {
 		// Check DVD Status, make sure it's error code 0
@@ -648,6 +649,7 @@ unsigned int load_app(int multiDol)
 	*(volatile unsigned int*)VAR_INTERRUPT_TIMES = 0;
 	*(volatile unsigned int*)VAR_READS_IN_AS = 0;
 	*(volatile unsigned int*)VAR_LAST_OFFSET = 0xBEEFCAFE;
+	*(volatile unsigned int*)VAR_LAST_DMA = 0;
 	*(volatile unsigned int*)VAR_AS_ENABLED = !swissSettings.muteAudioStreaming;
 	memset((void*)VAR_DI_REGS, 0, 0x24);
 	memset((void*)VAR_STREAM_START, 0, 0xA0);

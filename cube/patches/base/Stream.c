@@ -28,7 +28,7 @@ typedef signed short s16;
 #define ONE_BLOCK_SIZE 32
 #define SAMPLES_PER_BLOCK  28
 
-void device_frag_read(void *dst, u32 len, u32 offset);
+int device_frag_read(void *dst, u32 len, u32 offset, int sync);
 void WritePCM48to32(u32 *buf_loc);
 void WritePCM48(u32 *buf_loc);
 
@@ -121,7 +121,7 @@ void StreamUpdateRegisters()
 		}
 		else if(*(u32*)VAR_STREAM_CUR > 0)
 		{
-			device_frag_read((u8*)DECODE_WORK_AREA, StreamGetChunkSize(), *(u32*)VAR_STREAM_CUR);
+			device_frag_read((u8*)DECODE_WORK_AREA, StreamGetChunkSize(), *(u32*)VAR_STREAM_CUR, 1);
 			*(u32*)VAR_STREAM_CUR += StreamGetChunkSize();
 			if(*(u32*)VAR_STREAM_CUR >= *(u32*)VAR_STREAM_END)
 			{
@@ -148,12 +148,12 @@ void StreamStartStream(u32 CurrentStart, u32 CurrentSize)
 		u32 StreamCurrent = CurrentStart;
 		*(u32*)VAR_STREAM_END = CurrentStart + CurrentSize;
 		StreamPrepare();
-		device_frag_read((u8*)DECODE_WORK_AREA, StreamGetChunkSize(), StreamCurrent);
+		device_frag_read((u8*)DECODE_WORK_AREA, StreamGetChunkSize(), StreamCurrent, 1);
 		StreamCurrent += StreamGetChunkSize();
 		*(u8*)VAR_STREAM_CURBUF = 0; //reset adp buffer
 		StreamUpdate();
 		/* Directly read in the second buffer */
-		device_frag_read((u8*)DECODE_WORK_AREA, StreamGetChunkSize(), StreamCurrent);
+		device_frag_read((u8*)DECODE_WORK_AREA, StreamGetChunkSize(), StreamCurrent, 1);
 		StreamCurrent += StreamGetChunkSize();
 		StreamUpdate();
 		/* Send stream signal to PPC */
