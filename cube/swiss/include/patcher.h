@@ -78,6 +78,8 @@ extern u8 MajoraAudioStream[];
 extern u32 MajoraAudioStream_length;
 extern u8 MajoraLoadRegs[];
 extern u32 MajoraLoadRegs_length;
+extern u8 FakeInterrupt[];
+extern u32 FakeInterrupt_length;
 
 enum patchIds {
 	GX_GETYSCALEFACTORHOOK = 0,
@@ -103,6 +105,7 @@ enum patchIds {
 	MAJORA_SAVEREGS,
 	MAJORA_AUDIOSTREAM,
 	MAJORA_LOADREGS,
+	FAKE_INTERRUPT,
 	PATCHES_MAX
 };
 

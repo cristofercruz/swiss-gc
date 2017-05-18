@@ -52,9 +52,6 @@ trigger_di_irq:
 
 	.globl stop_di_irq
 stop_di_irq:
-	lis		r3, 0xCC00
-	lwz		r0, 0x6000(r3)
-	stw		r0, 0x6000(r3)
 	li		r0, 0
 	lis		r3, VAR_AREA
 	stw		r0, VAR_FAKE_IRQ_SET(r3)

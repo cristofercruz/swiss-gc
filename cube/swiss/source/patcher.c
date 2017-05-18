@@ -48,6 +48,15 @@ u16 _dvdinterrupthandler_part[3] = {
 u32 _osdispatch_part_a[2] = {
 	0x3C60CC00, 0x83E33000
 };
+u32 _osdispatch_part_dbg[3] = {
+	0x3C60CC00, 0x83A33000, 0x57BD041C
+};
+
+u32 _setinterrupt_part[4] = {
+	0x5480056A, 0x28000000, 0x40820008, 0x60000004
+};
+
+u32 getPatchAddr(int patchId);
 
 int install_code()
 {
@@ -573,6 +582,34 @@ u32 Patch_DVDLowLevelRead(void *addr, u32 length, int dataType) {
 			*(u32*)(addr_start+iEnd) = branch(STOP_DI_IRQ, properAddress);
 			patched |= 0x1;
 		}
+		// __OSDispatchInterrupt
+		else if( (*(u32*)(addr_start + 0 )) == _osdispatch_part_a[0]
+			&& (*(u32*)(addr_start + 4 )) == _osdispatch_part_a[1] )
+		{
+			u32 properAddress = Calc_ProperAddress(addr, dataType, (u32)(addr_start+4)-(u32)(addr));
+			print_gecko("Found:[__OSDispatchInterrupt] @ %08X\r\n", properAddress-4 );
+			*(u32*)(addr_start + 4) = branchAndLink(getPatchAddr(FAKE_INTERRUPT), properAddress);
+		}
+		// __OSDispatchInterrupt DBG
+		else if( (*(u32*)(addr_start + 0 )) == _osdispatch_part_dbg[0]
+			&& (*(u32*)(addr_start + 4 )) == _osdispatch_part_dbg[1]
+			&& (*(u32*)(addr_start + 8 ))  == _osdispatch_part_dbg[2] ) 
+		{
+			u32 properAddress = Calc_ProperAddress(addr, dataType, (u32)(addr_start+4)-(u32)(addr));
+			print_gecko("Found:[__OSDispatchInterrupt DBG] @ %08X\r\n", properAddress-4 );
+			//TODO implement me.
+		}
+		// SetInterruptMask
+		else if( (*(u32*)(addr_start + 0 )) == _setinterrupt_part[0]
+			&& (*(u32*)(addr_start + 4 )) == _setinterrupt_part[1]
+			&& (*(u32*)(addr_start + 8 )) == _setinterrupt_part[2]
+			&& ((*(u32*)(addr_start + 12 )) & 0xFC00FFFF) == _setinterrupt_part[3] )
+		{
+			u32 properAddress = Calc_ProperAddress(addr, dataType, (u32)(addr_start)-(u32)(addr));
+			print_gecko("Found:[SetInterruptMask] @ %08X\r\n", properAddress );
+			*(u32*)(addr_start + 12) |=  0x4;
+		}
+		
 		addr_start += 4;
 	}
 	if(patched != READ_PATCHED_ALL) {
@@ -730,6 +767,8 @@ u32 installPatch(int patchId) {
 			patchSize = MajoraAudioStream_length; patchLocation = MajoraAudioStream; break;
 		case MAJORA_LOADREGS:
 			patchSize = MajoraLoadRegs_length; patchLocation = MajoraLoadRegs; break;
+		case FAKE_INTERRUPT:
+			patchSize = FakeInterrupt_length; patchLocation = FakeInterrupt; break;
 		default:
 			break;
 	}

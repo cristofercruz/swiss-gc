@@ -20,17 +20,58 @@
 
 #define AGGRESSIVE_INT 1
 
+#define EXI_READ					0			/*!< EXI transfer type read */
+#define EXI_WRITE					1			/*!< EXI transfer type write */
+
+void ex_select()
+{
+	volatile unsigned long* exi = (volatile unsigned long*)0xCC006828;
+	exi[0] = (exi[0] & 0x405) | 0xB0;	// EXI_CHANNEL_2, EXI_DEVICE_0, EXI_SPEED1MHZ
+}
+
+void ex_deselect()
+{
+	volatile unsigned long* exi = (volatile unsigned long*)0xCC006828;
+	exi[0] &= 0x405;
+}
+
+void ex_imm_write(u32 data, int len) 
+{
+	volatile unsigned long* exi = (volatile unsigned long*)0xCC006828;
+	exi[4] = data;
+	// Tell EXI if this is a read or a write
+	exi[3] = ((len - 1) << 4) | (EXI_WRITE << 2) | 1;
+	// Wait for it to do its thing
+	while (exi[3] & 1);
+}
+
+u32 ex_imm_read()
+{
+	volatile unsigned long* exi = (volatile unsigned long*)0xCC006828;
+	exi[4] = -1;
+	// Tell EXI if this is a read or a write
+	exi[3] = ((4 - 1) << 4) | (EXI_READ << 2) | 1;
+	// Wait for it to do its thing
+	while (exi[3] & 1);
+	return exi[4];
+}
+
+void ex_dma_sync(void* data, int len, int mode)
+{
+	volatile unsigned long* exi = (volatile unsigned long*)0xCC006828;
+	exi[1] = (unsigned long)data&0x03FFFFE0;
+	exi[2] = 32;
+	exi[3] = (mode << 2) | 3;
+	while (exi[3] & 1);	// Yeah.
+}
+
+
 void trigger_dvd_interrupt() {
-	volatile u32* realDVD = (volatile u32*)0xCC006000;
-	if(!(realDVD[7]&1))
-	{
-		realDVD[0] = 0x7E;
-		realDVD[2] = 0xE0000000;
-		realDVD[7] |= 1;
-	}
-#ifndef AGGRESSIVE_INT
-	while(realDVD[7] & 1);
-#endif
+	ex_select();
+	ex_imm_write(0, 2);
+	ex_dma_sync((void*)0x80002B00, 4, EXI_READ);
+	ex_deselect();
+	*(u32*)(*(u32*)0xCC003000) = *(u32*)0xCC003000;
 }
 
 #define ALIGN_BACKWARD(x,align) \
@@ -204,7 +245,9 @@ void DIUpdateRegisters() {
 		// Keep mask on SR but also set our TC INT to indicate operation complete
 		dvd[DI_SR] |= 0x10;
 		dvd[DI_CR] &= 2;
-		*(u32*)VAR_FAKE_IRQ_SET = 1;
-		trigger_dvd_interrupt();
+		if(dvd[DI_SR] & 0x8) { // TC Interrupt Enabled
+			*(u32*)VAR_FAKE_IRQ_SET = 4;
+			trigger_dvd_interrupt();
+		}
 	}
 }
