@@ -12,7 +12,7 @@
 
 // Returns how much was read.
 u32 process_queue(void* dst, u32 len, u32 offset, int readComplete) {
-	
+	readComplete=1;
 	if(len) {
 		// read a bit
 		int amountToRead = 0;

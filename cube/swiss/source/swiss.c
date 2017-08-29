@@ -524,14 +524,14 @@ unsigned int load_app(int multiDol)
 	}
 	
 	// Don't needlessly apply audio streaming if the game doesn't want it
-	if(!GCMDisk.AudioStreaming || devices[DEVICE_CUR] == &__device_wkf || devices[DEVICE_CUR] == &__device_dvd) {
+	if(!GCMDisk.AudioStreaming || devices[DEVICE_CUR] == &__device_dvd) {
 		swissSettings.muteAudioStreaming = 1;
 	}
 	if(!strncmp((const char*)0x80000000, "PZL", 3))
 		swissSettings.muteAudioStreaming = 0;
 	
 	// Adjust top of memory
-	u32 top_of_main_ram = swissSettings.muteAudioStreaming ? 0x81800000 : DECODED_BUFFER_0;
+	u32 top_of_main_ram =  DECODED_BUFFER_0;
 	// Steal even more if there's cheats!
 	if(swissSettings.wiirdDebug || getEnabledCheatsSize() > 0) {
 		top_of_main_ram = WIIRD_ENGINE;
@@ -614,7 +614,7 @@ unsigned int load_app(int multiDol)
 	}
 	
 	// Only set up the WKF fragmentation patch if we have to.
-	if(devices[DEVICE_CUR] == &__device_wkf && wkfFragSetupReq) {
+	/*if(devices[DEVICE_CUR] == &__device_wkf && wkfFragSetupReq) {
 		u32 ret = Patch_DVDLowLevelReadForWKF(main_dol_buffer, main_dol_size+DOLHDRLENGTH, PATCH_DOL);
 		if(ret == 0) {
 			DrawFrameStart();
@@ -623,7 +623,7 @@ unsigned int load_app(int multiDol)
 			sleep(5);
 			return 0;
 		}
-	}
+	}*/
 	
 	if(devices[DEVICE_CUR] == &__device_usbgecko) {
 		Patch_DVDLowLevelReadForUSBGecko(main_dol_buffer, main_dol_size+DOLHDRLENGTH, PATCH_DOL);
@@ -698,7 +698,7 @@ unsigned int load_app(int multiDol)
 	ICInvalidateRange((void*)0x80000000, 0x3100);
 	
 	// Try a device speed test using the actual in-game read code
-	if(devices[DEVICE_CUR]->features & FEAT_REPLACES_DVD_FUNCS) {
+	/*if(devices[DEVICE_CUR]->features & FEAT_REPLACES_DVD_FUNCS) {
 		print_gecko("Attempting speed test\r\n");
 		char *buffer = memalign(32,1024*1024);
 		typedef u32 (*_calc_speed) (void* dst, u32 len, u32 *speed);
@@ -716,8 +716,8 @@ unsigned int load_app(int multiDol)
 		print_gecko("Speed for 1024 bytes is: %i usec\r\n",speed/1024);
 		*(unsigned int*)VAR_DEVICE_SPEED = speed/1024;
 		free(buffer);
-	}
-	
+	}*/
+	*(unsigned int*)VAR_DEVICE_SPEED = 8;
 	if(swissSettings.hasDVDDrive) {
 		// Check DVD Status, make sure it's error code 0
 		print_gecko("DVD: %08X\r\n",dvd_get_error());
@@ -1516,8 +1516,8 @@ void select_device(int type)
 		int i = curDevice;
 		i+= direction;
 
-		if(i < 0) i = MAX_DEVICES;
-		else if (i > MAX_DEVICES) i = 0;
+		if(i < 0) i = MAX_DEVICES-1;
+		else if (i >= MAX_DEVICES) i = 0;
 		while(1) {
 			if(allDevices[i] != NULL && (deviceHandler_getDeviceAvailable(allDevices[i])||showAllDevices) && (allDevices[i]->features & requiredFeatures)) {
 				curDevice = i;

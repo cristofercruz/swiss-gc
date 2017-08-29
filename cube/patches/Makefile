@@ -124,15 +124,36 @@ build-usb:
 	@rm *.elf
 
 build-wkf:
+#	@echo Building WKF Patch ...
+#	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c wkf/base.S
+#	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c wkf/wkf.c
+#	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c base/usbgecko.c
+#	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c sdgecko/sd.c
+#	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c base/frag.c
+#	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c base/igr.c  -DWKF
+#	
+#	@$(LD) -o wkf.elf base.o wkf.o usbgecko.o sd.o frag.o igr.o --section-start .text=0x80001000 --gc-sections
+#	@rm -rf *.o
+#	@$(OBJDUMP) -D wkf.elf > $(DISASM)/wkf_disasm.txt
+#	@$(OBJCOPY) -O binary wkf.elf wkf.bin
+#	@$(BIN2S) wkf.bin > wkf.s
+#	@mv -f wkf.s $(DEST)/wkfPatch.s
+#	@rm *.bin
+#	@rm *.elf
 	@echo Building WKF Patch ...
-	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c wkf/base.S
-	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c wkf/wkf.c
-	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c base/usbgecko.c
-	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c sdgecko/sd.c
-	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c base/frag.c
-	@$(CC) -O1 -ffunction-sections -mmultiple -mstring -c base/igr.c  -DWKF
-	
-	@$(LD) -o wkf.elf base.o wkf.o usbgecko.o sd.o frag.o igr.o --section-start .text=0x80001000 --gc-sections
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/base.S
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c wkf/wkf.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/frag.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/igr.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/usbgecko.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/dvdqueue.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/dvdinterface.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/adp.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/Stream.c
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/__DSPHandler.S
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/appldr_start.S
+	@$(CC) -O1 -ffunction-sections -DDEBUG -mmultiple -mstring -c base/appldr.c
+	@$(LD) -o wkf.elf base.o igr.o frag.o wkf.o dvdinterface.o dvdqueue.o usbgecko.o adp.o Stream.o __DSPHandler.o appldr_start.o appldr.o --section-start .text=0x80001000 --gc-sections
 	@rm -rf *.o
 	@$(OBJDUMP) -D wkf.elf > $(DISASM)/wkf_disasm.txt
 	@$(OBJCOPY) -O binary wkf.elf wkf.bin

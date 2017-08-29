@@ -18,7 +18,7 @@
 #define DI_IMM		(8)
 #define DI_CFG		(9)
 
-#define AGGRESSIVE_INT 1
+//#define AGGRESSIVE_INT 1
 
 void trigger_dvd_interrupt() {
 	volatile u32* realDVD = (volatile u32*)0xCC006000;
@@ -26,7 +26,12 @@ void trigger_dvd_interrupt() {
 	{
 		realDVD[0] = 0x7E;
 		realDVD[2] = 0xE0000000;
-		realDVD[7] |= 1;
+		realDVD[3] = 0;
+		realDVD[4] = 0;
+		realDVD[5] = 0;
+		realDVD[6] = 0;
+		realDVD[8] = 0;
+		realDVD[7] = 1;
 	}
 #ifndef AGGRESSIVE_INT
 	while(realDVD[7] & 1);
@@ -43,7 +48,7 @@ u32 branch(u32 dst, u32 src)
 	return newval | 0x48000000;
 }
 void appldr_start();
-
+extern void print_int_hex(unsigned int num);
 // DVD Drive command wrapper
 void DIUpdateRegisters() {
 
@@ -68,7 +73,17 @@ void DIUpdateRegisters() {
 	// If we have something, IMM or DMA command
 	if((dvd[DI_CR] & 1))
 	{
-
+#ifdef DEBUG
+		usb_sendbuffer_safe("DICommand: ",11);
+		print_int_hex(dvd[DI_CMD]);
+		usb_sendbuffer_safe(" dma: ",6);
+		print_int_hex(dvd[DI_DMAADDR]);
+		usb_sendbuffer_safe(" len: ",6);
+		print_int_hex(dvd[DI_DMALEN]);
+		usb_sendbuffer_safe(" lba: ",6);
+		print_int_hex(dvd[DI_LBA]);
+		usb_sendbuffer_safe("\r\n",2);
+#endif
 		u32 DIcommand = dvd[DI_CMD]>>24;
 		switch( DIcommand )
 		{
@@ -105,12 +120,19 @@ void DIUpdateRegisters() {
 							if(*(u8*)VAR_STREAM_DI)
 							{
 								if((*(u32*)VAR_STREAM_CUR))
-									dvd[DI_IMM] = ALIGN_BACKWARD((*(u32*)VAR_STREAM_CUR), 0x800) >> 2;
+									dvd[DI_IMM] = ALIGN_BACKWARD((*(u32*)VAR_STREAM_CUR), 0x8000) >> 2;
 								else
 									dvd[DI_IMM] = (*(u32*)VAR_STREAM_END) >> 2;
 							}
 							else
 								dvd[DI_IMM] = 0;
+#ifdef DEBUG
+							usb_sendbuffer_safe("0xE2 Reply: ",12);
+							print_int_hex(dvd[DI_IMM]);
+							usb_sendbuffer_safe(" end: ",6);
+							print_int_hex((*(u32*)VAR_STREAM_END)>>2);
+							usb_sendbuffer_safe("\r\n",2);
+#endif
 							break;
 						case 0x02:	// disc offset of file
 							dvd[DI_IMM] = (*(u32*)VAR_STREAM_START) >> 2;
@@ -205,7 +227,7 @@ void DIUpdateRegisters() {
 		dvd[DI_SR] |= 0x10;
 		dvd[DI_CR] &= 2;
 		if(dvd[DI_SR] & 0x8) { // TC Interrupt Enabled
- 			*(u32*)VAR_FAKE_IRQ_SET = 4;
+ 			*(u32*)VAR_FAKE_IRQ_SET = 1;
  			trigger_dvd_interrupt();
  		}
 	}
