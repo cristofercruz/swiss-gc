@@ -127,7 +127,7 @@ patched_memcpy:
 	mr		r4, r24
 	cmpwi	r3, 0x0500
 	beq		customhandler
-	cmpwi	r3, 0xF00
+	cmpwi	r3, 0x900
 	bgt		redirecthandler
 	blr
 customhandler:
@@ -144,7 +144,7 @@ patched_memcpy_dbg:
 	rlwinm	r3, r3, 0, 16, 31
 	cmpwi	r3, 0x0500
 	beq		customhandlerdbg
-	cmpwi	r3, 0xF00
+	cmpwi	r3, 0x900
 	bgt		redirecthandlerdbg
 	addis	r3, r3, 0x8000
 	blr

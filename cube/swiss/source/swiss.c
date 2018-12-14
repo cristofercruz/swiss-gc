@@ -797,6 +797,13 @@ unsigned int load_app(int multiDol, ExecutableFile *filesToPatch)
 	DCFlushRange((void*)0x80000000, 0x3100);
 	ICInvalidateRange((void*)0x80000000, 0x3100);
 	
+	
+	if((devices[DEVICE_CUR] == &__device_sd_a) || (devices[DEVICE_CUR] == &__device_sd_b)) {
+		sdgecko_setPageSize(((devices[DEVICE_CUR]->location == LOC_MEMCARD_SLOT_A)? 0:1), 512);
+		s32 pageSize = sdgecko_getPageSize(((devices[DEVICE_CUR]->location == LOC_MEMCARD_SLOT_A)? 0:1));
+		print_gecko("SD Block Size: %i\r\n", pageSize);
+	}
+	
 	// Try a device speed test using the actual in-game read code
 	if(devices[DEVICE_CUR]->features & FEAT_REPLACES_DVD_FUNCS) {
 		print_gecko("Attempting speed test\r\n");
@@ -831,6 +838,7 @@ unsigned int load_app(int multiDol, ExecutableFile *filesToPatch)
 	*(vu8*)VAR_IGR_EXIT_TYPE = (u8)swissSettings.igrType;
 	memset((void*)VAR_DI_REGS, 0, 0x24);
 	memset((void*)VAR_STREAM_START, 0, 0xA0);
+	memset((void*)VAR_SECTOR_BUF, 0, 0x200);
 	print_gecko("Audio Streaming is %s\r\n",*(vu32*)VAR_AS_ENABLED?"Enabled":"Disabled");
 
 	if(swissSettings.wiirdDebug || getEnabledCheatsSize() > 0) {
@@ -842,10 +850,6 @@ unsigned int load_app(int multiDol, ExecutableFile *filesToPatch)
 		wkfWriteOffset(*(vu32*)VAR_DISC_1_LBA);
 	}
 	print_gecko("libogc shutdown and boot game!\r\n");
-	if((devices[DEVICE_CUR] == &__device_sd_a) || (devices[DEVICE_CUR] == &__device_sd_b)) {
-		print_gecko("set size\r\n");
-	    sdgecko_setPageSize(((devices[DEVICE_CUR]->location == LOC_MEMCARD_SLOT_A)? 0:1), 512);
-	}
 	DOLtoARAM(main_dol_buffer, 0, NULL);
 	return 0;
 }

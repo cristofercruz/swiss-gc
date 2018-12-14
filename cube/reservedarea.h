@@ -12,6 +12,7 @@
 #include "asm.h"
 .set VAR_AREA,				0x8000
 .set VAR_TVMODE,			0x00CC	# TV format
+.set VAR_SECTOR_BUF,		0x0A00	# 0x200 of SD read data
 .set VAR_FILENAME_LEN,		0x0E00	# filename length
 .set VAR_FILENAME,			0x0E01	# filename
 .set VAR_CLIENT_MAC,		0x0EEC	# client MAC address
@@ -42,6 +43,7 @@
 .set VAR_CUR_DISC_LBA, 		0x2F08	# is the currently selected disk sector
 .set VAR_EXI_BUS_SPD, 		0x2F0C	# is the EXI bus speed (192 = 16mhz vs 208 = 32mhz)
 .set VAR_SD_SHIFT, 			0x2F10	# is the SD Card shift amount when issueing read cmds
+.set VAR_SD_LASTOFS,		0x2F11	# offset in the last sector
 .set VAR_EXI_FREQ, 			0x2F14	# is the EXI frequency (4 = 16mhz, 5 = 32mhz)
 .set VAR_EXI_SLOT, 			0x2F18	# is the EXI slot (0 = slot a, 1 = slot b)
 .set VAR_TMP1,  			0x2F1C  # space for a variable if required
@@ -95,6 +97,7 @@
 
 #define VAR_AREA			(0x80000000)
 #define VAR_TVMODE			(VAR_AREA+0x00CC)	// TV format
+#define VAR_SECTOR_BUF		(VAR_AREA+0x0A00)	// 0x200 of SD read data
 #define VAR_FILENAME_LEN	(VAR_AREA+0x0E00)	// filename length
 #define VAR_FILENAME		(VAR_AREA+0x0E01)	// filename
 #define VAR_CLIENT_MAC		(VAR_AREA+0x0EEC)	// client MAC address
@@ -125,6 +128,7 @@
 #define VAR_CUR_DISC_LBA 	(VAR_AREA+0x2F08)	// is the currently selected disk sector
 #define VAR_EXI_BUS_SPD 	(VAR_AREA+0x2F0C)	// is the EXI bus speed (192 = 16mhz vs 208 = 32mhz)
 #define VAR_SD_SHIFT 		(VAR_AREA+0x2F10)	// is the SD Card shift amount when issueing read cmds
+#define VAR_SD_LASTOFS		(VAR_AREA+0x2F12)	// offset in the last sector
 #define VAR_EXI_FREQ 		(VAR_AREA+0x2F14)	// is the EXI frequency (4 = 16mhz, 5 = 32mhz)
 #define VAR_EXI_SLOT 		(VAR_AREA+0x2F18)	// is the EXI slot (0 = slot a, 1 = slot b)
 #define VAR_TMP1  			(VAR_AREA+0x2F1C)	// space for a variable if required
