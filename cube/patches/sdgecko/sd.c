@@ -117,6 +117,7 @@ void rcvr_datablock(void *dest, u32 start_byte, u32 bytes_to_read) {
 	u32 remainder = SECTOR_SIZE - (start_byte+bytes_to_read);
 	if(remainder) {
 		exi_read_to_buffer((void*)VAR_SECTOR_BUF, remainder);
+		dcache_flush_icache_inv((void*)VAR_SECTOR_BUF, remainder);
 	}
 	exi_imm_read(2);		// discard CRC
 #ifdef DEBUG_VERBOSE
